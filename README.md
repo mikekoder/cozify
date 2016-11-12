@@ -1,3 +1,8 @@
+# Lataa
+Vasemmalla "Downloads"  
+Pura paketti  
+Avaa *cozify-test.html*
+
 # Käyttö
 
 Syötä sähköpostiosoite -> Paina "Request password"  
