@@ -9,8 +9,8 @@ Avaa *cozify-test.html*
 Syötä sähköpostiosoite -> Paina *Request password*  
 Kopioi salasana sähköpostista -> Paina *Login* (remote token ilmestyy)  
 Paina *Get hub ip* (hubin ip-osoite ilmestyy)  
-Paina *Get hub* (hubin nimi ja id ilmestyy)  
+Paina *Get hub* (hubin nimi ja id ilmestyvät)  
 Paina *Get hub token* (hubin token ilmestyy)  
-Paina *Refresh* (laitteet ilmestyy)  
+Paina *Refresh* (laitteet ilmestyvät)  
 
 Tokenit sekä ip jäävät selaimen localstorageen, joten seuraavalla kerralla voi hakea laitteet suoraan.
