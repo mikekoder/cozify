@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Cozify test</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+      .row{ margin-top: 10px;}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-1">
+          <label for="email">Email</label>
+        </div>
+        <div class="col-sm-4">
+            <input type="email" class="form-control" id="email" data-bind="value: email" />
+        </div>
+        <div class="col-sm-2">
+            <button class="btn btn-primary" data-bind="click: requestPassword">Request password</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-1">
+          <label for="password">Password</label>
+        </div>
+        <div class="col-sm-4">
+            <input type="text" class="form-control" id="password" data-bind="value: password" />
+        </div>
+        <div class="col-sm-2">
+            <button class="btn btn-primary" data-bind="click: login">Login</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-1">
+          <label>Remote token</label>
+        </div>
+        <div class="col-sm-4">
+          <textarea class="form-control" data-bind="value: token"></textarea>
+        </div>
+        <div class="col-sm-2">
+            <button class="btn btn-secondary" data-bind="click: refreshToken">Refresh token</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-1">
+          <label>Hub ip **</label>
+        </div>
+        <div class="col-sm-4">
+          <input type="text" class="form-control" data-bind="value: hubIp" />
+        </div>
+        <div class="col-sm-2">
+          <button class="btn btn-primary" data-bind="click:getLanIp">Get hub ip</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-1">
+          <label>Hub</label>
+        </div>
+        <div class="col-sm-4">
+          <span data-bind="text: hubName"></span><br />
+          <span data-bind="text: hubId"></span>
+        </div>
+        <div class="col-sm-2">
+          <button class="btn btn-primary" data-bind="click:getHub">Get hub</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-1">
+          <label>Hub token **</label>
+        </div>
+        <div class="col-sm-4">
+          <textarea class="form-control" data-bind="value: hubToken"></textarea>
+        </div>
+        <div class="col-sm-2">
+         <button class="btn btn-primary" data-bind="click:getHubKeys">Get hub token</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+        <h2>Devices <button class="btn btn-primary" data-bind="click:poll">Refresh **</button></h2>
+        <table class="table">
+          <thead>
+            <th>Name</th><th>Manufacturer</th><th>Type</th><th></th>
+          </thead>
+          <tbody data-bind="foreach: devices">
+            <td data-bind="text: name"></td>
+            <td data-bind="text: manufacturer"></td>
+            <td data-bind="text: type"></td>
+            <td>
+              <button class="btn btn-primary" data-bind="visible: canTurnOn, click: $parent.turnOn">On</button>
+              <button class="btn btn-primary" data-bind="visible: canTurnOff, click: $parent.turnOff">Off</button>
+              <button class="btn btn-primary" data-bind="visible: capAlert, click: $parent.alert">Alert</button>
+            </td>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-1">
+        </div>
+        <div class="col-sm-6" data-bind="foreach: logs">
+        </div>
+      </div>
+    </div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.1/knockout-min.js"></script>
+    <script>
+      function CozifyViewModel(){
+        var remoteBaseUrl = "https://cloud2.cozify.fi/ui/0.2/";
+        var localBaseUrl = "http://192.168.1.215:8893/";
+        var port = 8893;
+        var self = this;
+        this.hubIp = ko.observable();
+        this.logs = ko.observableArray();
+        this.email = ko.observable();
+        this.password = ko.observable();
+        this.token = ko.observable();
+        this.hubToken = ko.observable();
+        this.userId = ko.observable();
+        this.hubId = ko.observable();
+        this.hubName = ko.observable();
+        this.hubs = ko.observableArray();
+        this.devices = ko.observableArray();
+        
+        function addToken(xhr){
+          xhr.setRequestHeader('Accept', 'application/json');
+          xhr.setRequestHeader('Content-Type','application/json');
+          if(self.token()){
+            xhr.setRequestHeader('Authorization', self.token());
+          }
+        };
+        function addHubToken(xhr){
+          xhr.setRequestHeader('Accept', 'application/json');
+          xhr.setRequestHeader('Content-Type','application/json');
+          if(self.hubToken()){
+            xhr.setRequestHeader('Authorization', self.hubToken());
+          }
+        };
+        
+        
+        this.localBaseUrl = ko.computed(function(){
+          return "http://" + self.hubIp() + ":" + port + "/";
+        });
+        
+        
+        
+        this.requestPassword = function(){
+          var url = remoteBaseUrl + "user/requestlogin?email=" + encodeURIComponent(self.email());
+          $.ajax({
+            url: url,
+            method: 'POST',
+            beforeSend: function(){}
+          }).done(function(data){
+            self.logs.unshift('Check your email');
+          }).fail(function(data){
+            self.logs.unshift('Request failed: ' + data);
+          });
+        }
+        this.login = function(){
+          var url = remoteBaseUrl + "user/emaillogin";
+          $.ajax({
+            url: url,
+            method: 'POST',
+            data: {email: self.email(), password: self.password()},
+            beforeSend: function(){}
+          }).done(function(data){
+            self.token(data);
+            if(localStorage){
+              localStorage.setItem("cozify-remote-token", data);
+            }
+          }).fail(function(data){
+            self.logs.unshift('Login failed: ' + data);
+          });
+        }
+        this.getUserInfo = function(){
+          var url = remoteBaseUrl + "user?email=" + self.email();
+          $.ajax({
+            url: url,
+            method: 'GET',
+            beforeSend: addToken
+          }).done(function(data){
+            self.userId(data.uid);
+          }).fail(function(data){
+            self.logs.unshift('Request failed: ' + data);
+          });
+        }
+        this.refreshToken = function(){
+          var url = baseUrl + "user/refreshsession";
+          $.ajax({
+            url: url,
+            method: 'GET',
+            beforeSend: addToken
+          }).done(function(data){
+            self.token(data);
+            if(localStorage){
+              localStorage.setItem("cozify-remote-token", data);
+            }
+          }).fail(function(data){
+            self.logs.unshift('Refresh failed: ' + data);
+          });
+        }
+        this.getLanIp = function(){
+          var url = remoteBaseUrl + "hub/lan_ip";
+          $.get(url).done(function(data){
+            self.hubIp(data[0]);
+            if(localStorage){
+              localStorage.setItem("cozify-hub-ip", data[0]);
+            }
+          console.log(data);}).fail(function(data){});
+        }
+        this.getHub = function(){
+          var url = self.localBaseUrl() + "hub";
+          $.get(url).done(function(data){
+            self.hubId(data.hubId);
+            self.hubName(data.name);
+          }).fail(function(data){});
+        }
+        this.getHubKeys = function(){
+          self.hubs.removeAll();
+          var url = remoteBaseUrl + "user/hubkeys";
+          $.ajax({
+            url: url,
+            method: 'GET',
+            beforeSend: addToken
+          }).done(function(data){
+            for(var i in data){
+              self.hubs.push({id:i, token: data[i]});
+              if(i == self.hubId()){
+                self.hubToken(data[i]);
+                if(localStorage){
+                  localStorage.setItem("cozify-local-token", data[i]);
+                }
+              }
+            }
+          console.log(data);}).fail(function(data){});
+        }
+
+        this.poll = function(){
+          self.devices.removeAll();
+          var url = self.localBaseUrl() + "cc/1.2/hub/poll";
+          $.get(url).done(function(data){
+            if(typeof data === 'string'){
+              data = jQuery.parseJSON(data);
+            }
+            for(var i in data.polls){
+              if(data.polls[i].type==="DEVICE_DELTA"){
+                for(var j in data.polls[i].devices){
+                  self.devices.push(new DeviceViewModel(data.polls[i].devices[j]));
+                }
+                
+              }
+            }
+            console.log(data);
+          }).fail(function(data){
+            self.logs.unshift('Request failed: ' + data);
+          });
+        }
+        this.getDevices = function(){
+          
+        }
+        this.turnOn = function(device){
+          var url = self.localBaseUrl() + "cc/1.2/devices/command";
+          var data = [{id: device.id, type: 'CMD_DEVICE_ON'}];
+          $.ajax({
+             url: url,
+             method: "PUT",
+             data: JSON.stringify(data)
+          }).done(function(data){
+            device.stateOn(true);
+          }).fail(function(data){});
+        };
+        this.turnOff = function(device){
+          var url = self.localBaseUrl() + "cc/1.2/devices/command";
+          var data = [{id: device.id, type: 'CMD_DEVICE_OFF'}];
+          $.ajax({
+             url: url,
+             method: "PUT",
+             data: JSON.stringify(data)
+          }).done(function(data){
+            device.stateOn(false);
+          }).fail(function(data){});
+        };
+        
+        $.ajaxSetup({
+              beforeSend: function(xhr){
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.setRequestHeader('Content-Type','application/json');
+                if(self.hubToken()){
+                  xhr.setRequestHeader('Authorization', self.hubToken());
+                }
+                else if(self.token()){
+                  xhr.setRequestHeader('Authorization', self.token());
+                }
+              }
+        });
+        
+        if(localStorage){
+          self.token(localStorage.getItem("cozify-remote-token"))
+          self.hubToken(localStorage.getItem("cozify-local-token"));
+          self.hubIp(localStorage.getItem("cozify-hub-ip"));
+        }
+      };
+      function DeviceViewModel(device){
+        var self = this;
+        this.id = device.id;
+        this.name = device.name;
+        this.manufacturer = device.manufacturer;
+        this.type = device.type;
+        // capabilities
+        this.capAlert = ko.observable(false);
+        this.capBrightness = ko.observable(false);
+        this.capContact = ko.observable(false);
+        this.capControlPower = ko.observable(false);
+        this.capGenerateAlert = ko.observable(false);
+        this.capIdentify = ko.observable(false);
+        this.capLiveFeed = ko.observable(false);
+        this.capMotion = ko.observable(false);
+        this.capOnOff = ko.observable(false);
+        this.capPushNotification = ko.observable(false);
+        this.capRecordAudio = ko.observable(false);
+        this.capRecordVideo = ko.observable(false);
+        this.capRemoteControl = ko.observable(false);
+        this.capTemperature = ko.observable(false);
+        this.capTransition = ko.observable(false);
+        this.capUserPresence = ko.observable(false);
+        
+        // states
+        this.stateAlert = ko.observable(false);
+        this.stateBrightness = ko.observable();
+        this.stateMotion = ko.observable(false);
+        this.stateOn = ko.observable(false);
+        this.stateOpen = ko.observable(false);
+        this.stateTemperature = ko.observable();
+        
+        this.canTurnOn = ko.computed(function(){
+          return self.capOnOff() && !self.stateOn();
+        });
+        this.canTurnOff = ko.computed(function(){
+          return self.capOnOff() && self.stateOn();
+        });
+
+        for(var i in device.capabilities.values){
+          switch (device.capabilities.values[i])
+          {
+            case 'ALERT':
+              self.capAlert(true);
+              break;
+            case 'BRIGHTNESS':
+              self.capBrightness(true);
+              break;
+            case 'CONTACT':
+              self.capContact(true);
+              break;  
+            case 'CONTROL_POWER':
+              self.capControlPower(true);
+              break;  
+            case 'GENERATE_ALERT':
+              self.capGenerateAlert(true);
+              break;  
+            case 'IDENTIFY':
+              self.capIdentify(true);
+              break;
+            case 'LIVE_FEED':
+              self.capLiveFeed(true);
+              break;
+            case 'MOTION':
+              self.capMotion(true);
+              break;
+            case 'ON_OFF':
+              self.capOnOff(true);
+              break;
+            case 'PUSH_NOTIFICATION':
+              self.capPushNotification(true);
+              break;  
+            case 'RECORD_AUDIO':
+              self.capRecordAudio(true);
+              break;
+            case 'RECORD_VIDEO':
+              self.capRecordVideo(true);
+              break;
+            case 'REMOTE_CONTROL':
+              self.capRemoteControl(true);
+              break;  
+            case 'TEMPERATURE':
+              self.capTemperature(true);
+              break;
+            case 'TRANSITION':
+              self.capTransition(true);
+              break;
+            case 'USER_PRESENCE':
+              self.capUserPresence(true);
+              break;
+          }
+        }
+        switch(device.state.type){
+          case 'DOORBELL':
+            self.stateAlert(device.state.alert);
+            break;
+          case 'STATE_CONTACT':
+            self.stateOpen(device.state.open);
+            break;
+          case 'STATE_LIGHT':
+            self.stateOn(device.state.isOn);
+            break;
+          case 'STATE_MOTION':
+            self.stateMotion(device.state.motion);
+            break;
+          case 'STATE_SMOKE_ALARM':
+            self.stateAlert(device.state.alert);
+            break;
+          case 'STATE_SOCKET':
+            self.stateOn(device.state.isOn);
+            break;
+        }
+      };
+      var model = new CozifyViewModel();
+      ko.applyBindings(model);
+
+    </script>
+  
+  </body>
+</html>
