@@ -125,7 +125,6 @@
     <script>
       function CozifyViewModel(){
         var remoteBaseUrl = "https://cloud2.cozify.fi/ui/0.2/";
-        var localBaseUrl = "http://192.168.1.215:8893/";
         var port = 8893;
         var self = this;
         this.hubIp = ko.observable();
@@ -203,7 +202,7 @@
           });
         }
         this.refreshToken = function(){
-          var url = baseUrl + "user/refreshsession";
+          var url = remoteBaseUrl + "user/refreshsession";
           $.ajax({
             url: url,
             method: 'GET',
